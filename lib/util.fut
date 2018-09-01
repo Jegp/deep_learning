@@ -5,6 +5,10 @@ module utility (R:real) : {
 
   type t = R.t
 
+  --- Add element wise
+  val add_v : []t -> []t -> []t
+  val add_matrix : [][]t -> [][]t -> [][]t
+
   --- Subtracts element wise
   val sub_v  : []t -> []t -> []t
   val sub_matrix:  [][]t -> [][]t -> [][]t
@@ -27,6 +31,12 @@ module utility (R:real) : {
 } = {
 
   type t  = R.t
+
+  let add_v [d] (x: [d]t) (y: [d]t) : [d]t =
+    map2 (R.+) x y
+
+  let add_matrix [m][n] (X: [m][n]t) (Y:[m][n]t) : [m][n]t = 
+    map2 add_v X Y  
 
   let sub_v [d] (x: [d]t) (y: [d]t) : [d]t =
     map2 (\x y -> R.(x - y)) x y

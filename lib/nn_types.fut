@@ -1,11 +1,11 @@
 -- | Network types
 type forwards   'input 'w 'output 'cache = bool -> w -> input -> (cache, output)
-type backwards  'c 'w_in 'w_out  'err_in  'err_out '^u = bool -> u -> w_out -> c -> err_in  -> (err_out, w_in)
+type backwards  'c 'w 'err_in 'err_out '^u = bool -> u -> w -> c -> err_in -> (err_out, w)
 
-type NN 'input 'w_in 'w_out 'output 'c_in 'c_out 'e_in 'e_out '^u =
-               { forward : forwards input w_in output c_out,
-                 backward: backwards c_out w_in w_out e_in e_out u,
-                 weights : w_out}
+type NN 'input 'w 'output 'c 'e_in 'e_out '^u =
+               { forward : forwards input w output c,
+                 backward: backwards c w e_in e_out u,
+                 weights : w}
 
 --- Commonly used types
 type arr1d 't = []t

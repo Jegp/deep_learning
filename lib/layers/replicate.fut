@@ -4,31 +4,27 @@ import "../util"
 import "../weight_init"
 import "/futlib/linalg"
 
-module type ReplicateLayer = {
-  val l : i32
-}
-
 -- | Split input into several layers
-module replicate (R:real) (L: ReplicateLayer) : layer_type with t = R.t
-                                   with input_params = (i32, [L.l]i32)
+module replicate (R:real) : layer_type with t = R.t
+                                   with input_params = (i32, []i32)
                                    with activations  = activation_func ([]R.t)
                                    with input        = arr2d R.t
                                    with weights      = std_weights R.t
-                                   with output       = [L.l](arr2d R.t)
-                                   with cache        = [L.l](arr2d R.t, arr2d R.t)
+                                   with output       = [](arr2d R.t)
+                                   with cache        = [](arr2d R.t, arr2d R.t)
                                    with error_in     = arr2d R.t
                                    with error_out    = arr2d R.t = {
 
   type t            = R.t
   type input        = arr2d t
   type weights      = (std_weights R.t)
-  type output       = [L.l](arr2d t)
-  type cache	    = [L.l](arr2d t, arr2d t)
+  type output       = []arr2d t
+  type cache	    = [](arr2d t, arr2d t)
   type error_in     = arr2d t
   type error_out    = arr2d t
   type b_output     = (error_out, std_weights R.t)
 
-  type input_params = (i32, [L.l]i32)
+  type input_params = (i32, []i32)
   type activations  = activation_func ([]t)
 
   type replicate_nn = NN input weights output
@@ -43,7 +39,7 @@ module replicate (R:real) (L: ReplicateLayer) : layer_type with t = R.t
   let empty_error : error_out = [[]]
 
   -- Forward propagation
-  let forward (act:[]t -> []t)
+  let forward (act:[]t -> []t) (l: i32)
                (training:bool)
                ((w, b): weights)
               (input:input) : (cache, output) = 
@@ -51,7 +47,7 @@ module replicate (R:real) (L: ReplicateLayer) : layer_type with t = R.t
     let res_bias = transpose (map2 (\xr b' -> map (\x -> (R.(x + b'))) xr) res b)
     let res_act  = map (\x -> act x) (res_bias)
     let cache    = if training then (input, res_bias) else empty_cache
-    in (replicate L.l cache, replicate L.l res_act)
+    in (replicate l cache, replicate l res_act)
 
   -- Backward propagation
   let backward (act: []t -> []t)
@@ -60,8 +56,9 @@ module replicate (R:real) (L: ReplicateLayer) : layer_type with t = R.t
                ((w, b): weights)
                (layer_caches: cache)
                (error: error_in) : b_output =
+    let l = length layer_caches
     let zero = R.from_fraction 0 1
-    let fact = (R.from_fraction 1 1) R./ (R.from_fraction L.l 1)
+    let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
     let average_sum_v [l][m] (matrix: [l][m]t): [m]t =
       util.scale_v (reduce util.add_v (replicate m (R.from_fraction 0 1)) matrix) fact
     let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : arr2d t=
@@ -87,13 +84,14 @@ module replicate (R:real) (L: ReplicateLayer) : layer_type with t = R.t
 	   empty_error
 	  else
 	   transpose (lalg.matmul (transpose w) delta)
-	in (error', (w', b'))) (zip (replicate L.l (w, b)) layer_caches))
+	in (error', (w', b'))) (zip (replicate l (w, b)) layer_caches))
     in (average_sum_matrix errors, reduce_weights weights)
 
-  let init ((m,_):input_params) (act:activations) (seed:i32) : replicate_nn =
+  let init ((m,ns):input_params) (act:activations) (seed:i32) : replicate_nn =
     let w = w_init.gen_random_array_2d_xavier_uni (m,m) seed
     let b = map (\_ -> R.(i32 0)) (0..<m)
-    in {forward  = forward act.f,
+    let l = length ns
+    in {forward  = forward act.f l,
 	backward = backward act.fd,
 	weights  = (w, b)}
 

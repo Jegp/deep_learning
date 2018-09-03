@@ -12,7 +12,7 @@ module replicate (R:real) : layer_type with t = R.t
                                    with weights      = std_weights R.t
                                    with output       = [](arr2d R.t)
                                    with cache        = [](arr2d R.t, arr2d R.t)
-                                   with error_in     = arr2d R.t
+                                   with error_in     = []arr2d R.t
                                    with error_out    = arr2d R.t = {
 
   type t            = R.t
@@ -20,7 +20,7 @@ module replicate (R:real) : layer_type with t = R.t
   type weights      = (std_weights R.t)
   type output       = []arr2d t
   type cache	    = [](arr2d t, arr2d t)
-  type error_in     = arr2d t
+  type error_in     = []arr2d t
   type error_out    = arr2d t
   type b_output     = (error_out, std_weights R.t)
 
@@ -55,7 +55,7 @@ module replicate (R:real) : layer_type with t = R.t
                (apply_grads: apply_grad t)
                ((w, b): weights)
                (layer_caches: cache)
-               (error: error_in) : b_output =
+               (errors: error_in) : b_output =
     let l = length layer_caches
     let zero = R.from_fraction 0 1
     let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
@@ -70,7 +70,9 @@ module replicate (R:real) : layer_type with t = R.t
       let b        = average_sum_v bs
       in (w, b)
 
-    let (errors, weights) = unzip (map (\((w,b), (input,inp_w_bias)) ->
+    let (errors, weights) = unzip (map (\i ->
+	let (input, inp_w_bias) = layer_caches[i]
+	let error    = errors[i]
 	let deriv    = (map (\x -> act x) inp_w_bias)
 	let delta    = transpose (util.hadamard_prod_2d error deriv)
 	let w_grad   = lalg.matmul delta input
@@ -84,7 +86,7 @@ module replicate (R:real) : layer_type with t = R.t
 	   empty_error
 	  else
 	   transpose (lalg.matmul (transpose w) delta)
-	in (error', (w', b'))) (zip (replicate l (w, b)) layer_caches))
+	in (error', (w', b'))) (iota l))
     in (average_sum_matrix errors, reduce_weights weights)
 
   let init ((m,ns):input_params) (act:activations) (seed:i32) : replicate_nn =

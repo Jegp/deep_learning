@@ -4,3 +4,5 @@
 *.c
 *.swp
 *.swo
+*.actual
+*.expected

@@ -7,7 +7,7 @@ import "/futlib/linalg"
 
 -- | Merges an array of layers
 module merge (R:real) : layer_type with t = R.t
-                                   with input_params = (i32, i32)
+                                   with input_params = ([]i32, i32)
                                    with activations  = activation_func ([]R.t)
                                    with input        = []arr2d R.t
                                    with weights      = std_weights R.t
@@ -25,7 +25,7 @@ module merge (R:real) : layer_type with t = R.t
   type error_out    = []arr2d t
   type b_output     = (error_out, weights)
 
-  type input_params = (i32, i32)
+  type input_params = ([]i32, i32)
   type activations  = activation_func ([]t)
 
   type merge_tp = NN input weights output
@@ -52,12 +52,18 @@ module merge (R:real) : layer_type with t = R.t
     in (caches, flatten outputs)
 
   -- Backward propagation
-  let backward (act:[]t -> []t)
+  let backward (act:[]t -> []t) (l: i32)
                (first_layer:bool)
                (apply_grads:apply_grad t)
                ((w, b):weights)
                (layer_caches:cache)
                (error:error_in) : b_output =
+    let zero = R.from_fraction 0 1
+    let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
+    let average_sum_v [l][m] (matrix: [l][m]t): [m]t =
+      util.scale_v (reduce util.add_v (replicate m (R.from_fraction 0 1)) matrix) fact
+    let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : [m][n]t=
+      util.scale_matrix (reduce util.add_matrix (replicate m (replicate n zero)) tensor) fact
     let (errors, output_weights) = unzip (map (\(input, inp_w_bias) ->
 	let deriv    = (map (\x -> act x) inp_w_bias)
 	let delta    = transpose (util.hadamard_prod_2d error deriv)
@@ -74,14 +80,14 @@ module merge (R:real) : layer_type with t = R.t
             transpose (lalg.matmul (transpose w) delta)
 	in (error', (w', b'))) layer_caches)
     let (w', b') = unzip output_weights
-    in (errors, (flatten w', flatten b'))
+    in (errors, (average_sum_matrix w', average_sum_v b'))
 
-  let init ((m,n):input_params) (act:activations) (seed:i32) : merge_tp =
-    let w = w_init.gen_random_array_2d_xavier_uni (m,n) seed
+  let init [l] ((m,n):([l]i32,i32)) (act:activations) (seed:i32) : merge_tp =
+    let w = w_init.gen_random_array_2d_xavier_uni (n,n) seed
     let b = map (\_ -> R.(i32 0)) (0..<n)
     in 
     {forward  = forward act.f,
-     backward = backward act.fd,
+     backward = backward act.fd l,
      weights  = (w, b)}
 
 }

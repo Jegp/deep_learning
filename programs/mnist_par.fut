@@ -7,15 +7,16 @@ let l1 = dl.layers.dense (784, 256) dl.nn.identity seed
 let l2 = dl.layers.dense (256, 256) dl.nn.identity seed
 let l3 = dl.layers.dense (256, 10) dl.nn.identity seed
 
-let p1 = dl.layers.replicate (256, 1) dl.nn.identity seed
-let m = dl.layers.merge (1, 256, 256) dl.nn.identity seed
+let p1 = dl.layers.replicate (256, 2) dl.nn.identity seed
+let m1 = dl.layers.merge ([256, 256], 512) dl.nn.identity seed
+let m2 = dl.layers.dense (512, 10) dl.nn.identity seed
 
 --let nn0 = dl.nn.connect_layers l1 l2
 --let nn = dl.nn.connect_layers nn0 l3
 
 let nn0 = dl.nn.connect_layers l1 p1
-let nn1 = dl.nn.connect_layers nn0 m
-let nn  = dl.nn.connect_layers nn1 l3
+let nn1 = dl.nn.connect_layers nn0 m1
+let nn  = dl.nn.connect_layers nn1 m2
 
 let main [m] (input:[m][]dl.t) (labels:[m][]dl.t) =
   let train = 8000

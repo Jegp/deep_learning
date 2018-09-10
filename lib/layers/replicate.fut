@@ -10,17 +10,17 @@ module replicate (R:real) : layer_type with t = R.t
                                    with activations  = activation_func ([]R.t)
                                    with input        = arr2d R.t
                                    with weights      = std_weights R.t
-                                   with output       = [](arr2d R.t)
+                                   with output       = arr3d R.t
                                    with cache        = (arr2d R.t, arr2d R.t)
-                                   with error_in     = []arr2d R.t
+                                   with error_in     = arr3d R.t
                                    with error_out    = arr2d R.t = {
 
   type t            = R.t
   type input        = arr2d t
   type weights      = (std_weights R.t)
-  type output       = []arr2d t
+  type output       = arr3d t
   type cache	    = (arr2d t, arr2d t)
-  type error_in     = []arr2d t
+  type error_in     = arr3d t
   type error_out    = arr2d t
   type b_output     = (error_out, std_weights R.t)
 

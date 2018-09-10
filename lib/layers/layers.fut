@@ -24,7 +24,7 @@ module type layers = {
   type max_pooling_tp  =
     NN (arr4d t) () (arr4d t) (arr4d (i32)) (arr4d t) (arr4d t) (apply_grad t)
   type merge_tp =
-    NN ([]arr2d t) ((arr2d t,arr1d t)) (arr2d t)
+    NN ([]arr2d t) ([](arr2d t,arr1d t)) (arr2d t)
        ([](arr2d t, arr2d t)) (arr2d t) ([]arr2d t) (apply_grad t)
   type flatten_tp  =
     NN (arr4d t) () (arr2d t) dims3d (arr2d t) (arr4d t) (apply_grad t)
@@ -51,7 +51,7 @@ module layers_coll (R:real): layers with t = R.t = {
     NN (arr2d t) (arr2d t,arr1d t) (arr3d t)
        ((arr2d t, arr2d t)) (arr3d t) (arr2d t) (apply_grad t)
   type merge_tp =
-    NN ([]arr2d t) ((arr2d t,arr1d t)) (arr2d t)
+    NN ([]arr2d t) ([](arr2d t,arr1d t)) (arr2d t)
        ([](arr2d t, arr2d t)) (arr2d t) ([]arr2d t) (apply_grad t)
   type conv2d_tp      =
       NN (arr4d t) (arr2d t,arr1d t) (arr4d t)

@@ -34,7 +34,7 @@ module type layers = {
   val dense: (i32, i32) -> (activation_func ([]t)) ->  i32 -> dense_tp
   val conv2d: (i32, i32, i32, i32) -> (activation_func ([]t)) -> i32 -> conv2d_tp
   val max_pooling2d: (i32, i32) -> max_pooling_tp
-  val merge: ([]i32, i32) -> (activation_func ([]t)) -> i32 -> merge_tp
+  val merge: (i32, i32) -> (activation_func ([]t)) -> i32 -> merge_tp
   val flatten: flatten_tp
   val replicate: (i32, i32) -> (activation_func ([]t)) -> i32 -> replicate_tp
 }

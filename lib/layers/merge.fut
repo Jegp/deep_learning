@@ -7,7 +7,7 @@ import "/futlib/linalg"
 
 -- | Merges an array of layers
 module merge (R:real) : layer_type with t = R.t
-                                   with input_params = ([]i32, i32)
+                                   with input_params = (i32, i32)
                                    with activations  = activation_func ([]R.t)
                                    with input        = arr3d R.t
                                    with weights      = [](std_weights R.t)
@@ -25,7 +25,7 @@ module merge (R:real) : layer_type with t = R.t
   type error_out    = arr3d t
   type b_output     = (error_out, []std_weights t)
 
-  type input_params = ([]i32, i32)
+  type input_params = (i32, i32)
   type activations  = activation_func ([]t)
 
   type merge_tp = NN input weights output
@@ -39,10 +39,10 @@ module merge (R:real) : layer_type with t = R.t
   let empty_error:error_in = [[]]
 
   -- Forward propagation
-  let forward  (act:[]t -> []t)
+  let forward [n] (act:[]t -> []t)
                (training:bool)
-               (weights:weights)
-               (inputs:input) : (cache, output) =
+               (weights:[n]std_weights t)
+               (inputs:[n]arr2d t) : (cache, output) =
     let (caches, outputs) : (cache, []output) = 
       unzip (map2 (\(input) (w, b) ->
 	let res      = lalg.matmul w (transpose input)
@@ -59,12 +59,6 @@ module merge (R:real) : layer_type with t = R.t
                (weights:weights)
                (layer_caches:cache)
                (error_list:error_in) : b_output =
-    let zero = R.from_fraction 0 1
-    let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
-    let average_sum_v [l][m] (matrix: [l][m]t): [m]t =
-      util.scale_v (reduce util.add_v (replicate m (R.from_fraction 0 1)) matrix) fact
-    let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : [m][n]t=
-      util.scale_matrix (reduce util.add_matrix (replicate m (replicate n zero)) tensor) fact
     let split_errors : []error_in = unflatten l l_sz error_list
 
     let (errors, output_weights) : (error_out, []std_weights t) = 
@@ -85,12 +79,12 @@ module merge (R:real) : layer_type with t = R.t
 	in (error', (w', b'))) layer_caches weights split_errors)
     in (errors, output_weights)
 
-  let init [l] ((m,n):([l]i32,i32)) (act:activations) (seed:i32) : merge_tp =
-    let w = w_init.gen_random_array_2d_xavier_uni (n,n) seed
-    let b = map (\_ -> R.(i32 0)) (0..<n)
+  let init ((l, m):input_params) (act:activations) (seed:i32) : merge_tp =
+    let w = w_init.gen_random_array_2d_xavier_uni (m,m) seed
+    let b = map (\_ -> R.(i32 0)) (0..<(l * m))
     in 
     {forward  = forward act.f,
-     backward = backward act.fd l m[0],
+     backward = backward act.fd l m,
      weights  = replicate l (w, b)}
 
 }

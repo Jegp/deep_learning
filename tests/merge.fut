@@ -4,7 +4,7 @@ import "../lib/util"
 module dl = deep_learning f64
 module util = utility f64
 
-let merge = dl.layers.merge ([3, 3],6) dl.nn.identity 1
+let merge = dl.layers.merge (2, 3) dl.nn.identity 1
 
 let apply_grad_gd (alpha:f64)
                   (batch_size:i32)

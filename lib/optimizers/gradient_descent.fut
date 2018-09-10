@@ -43,7 +43,7 @@ module gradient_descent (R:real) : optimizer_type
     let (w',_) = loop (w, i) while i < length input do
                    let input'          = input[i:i+batch_sz]
                    let label'          = labels[i:i+batch_sz]
-                   let (cache, output) = f true w (input')
+                   let (cache, output) : (g, []o) = f true w (input')
                    let error           = map2 (\o l -> loss' o l) output label'
                    let (_, w')         = b false apply_g w cache error
                    in (w', i + batch_sz)

@@ -40,7 +40,7 @@ module merge (R:real) : layer_type with t = R.t
                (_:bool)
                (_: weights)
                ((i1, i2):input) : (cache, output) =
-    ((), (i1 ++ i2))
+    ((), map2 concat i1 i2)
 
   -- Backward propagation
   let backward (_:[]t -> []t) (l1_sz:i32)
@@ -49,7 +49,7 @@ module merge (R:real) : layer_type with t = R.t
                (_:weights)
                (_:cache)
                (error_concat:error_in) : b_output =
-    ((split l1_sz error_concat), ())
+    (unzip (map (split l1_sz) error_concat), ())
 
   let init ((l, _):input_params) (act:activations) (_:i32) : merge_tp =
     {forward  = forward act.f,

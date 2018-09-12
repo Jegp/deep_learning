@@ -8,9 +8,9 @@ module util = utility f64
 -- entry: split_network
 -- input {[[1.0], [2.0]]
 --
---        [[1.0, 1.0], [2.0, 2.0]]}
+--        [[1.0, 0.0], [2.0, 0.0]]}
 --
--- output { 1.0}
+-- output { 1.0 }
 
 entry split_network input labels =
   let l1 = dl.layers.replicate (1) dl.nn.identity 1
@@ -20,9 +20,28 @@ entry split_network input labels =
   let nn' = dl.train.gradient_descent nn 0.1 input labels 1 
 	    dl.loss.softmax_cross_entropy_with_logits
   in dl.nn.accuracy nn' input
-     labels dl.nn.softmax dl.nn.argmax
+     labels dl.nn.identity dl.nn.argmax
 
--- 
+-- ==
+-- entry: split_network_predict
+-- input {[[1.0], [2.0]]
+--
+--        [[1.0, 1.0], [2.0, 2.0]]
+--
+--        [[3.0]]}
+--
+-- output { [[3.0, 3.0]] }
+
+entry split_network_predict input labels p =
+  let l1 = dl.layers.replicate (1) dl.nn.identity 1
+  let l2 = dl.layers.merge (1, 1) dl.nn.identity 1
+  let nn = dl.nn.connect_layers l1 l2
+
+  let nn' = dl.train.gradient_descent nn 0.1 input labels 1 
+	    dl.loss.softmax_cross_entropy_with_logits
+  in dl.nn.predict nn' p dl.nn.identity
+
+-- ==
 -- entry:par_layers
 -- input {[[1.0]]
 --

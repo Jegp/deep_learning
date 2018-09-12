@@ -80,7 +80,7 @@ module replicate (R:real) : layer_type with t = R.t
     let (error2, w2) = b w2 c2 e2
 
     let zero = R.from_fraction 0 1
-    let fact = (R.from_fraction 2 1) 
+    let fact = (R.from_fraction 1 2) 
     let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : arr2d t=
       util.scale_matrix (reduce util.add_matrix (replicate m (replicate n zero)) tensor) fact
 

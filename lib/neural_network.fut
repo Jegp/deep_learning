@@ -12,10 +12,10 @@ module type network = {
                       NN i1 (w1, w2) (o2) (c1,c2) (e2) (e1) (apply_grad t)
 
   -- Runs two networks in parallel
-  val connect_parallel 'w 'i 'o 'c 'e0 'e1:
-                      NN i w o c e0 e1 (apply_grad t) ->
-                      NN i w o c e0 e1 (apply_grad t) ->
-                      NN ([]i) ([]w) ([]o) ([]c) ([]e0) ([]e1) (apply_grad t)
+  val connect_parallel 'w1 'w2 'i1 'i2 'o1 'o2 'c1 'c2 'ei1 'eo1 'ei2 'eo2:
+                      NN i1 w1 o1 c1 ei1 eo1 (apply_grad t) ->
+                      NN i2 w2 o2 c2 ei2 eo2 (apply_grad t) ->
+                      NN (i1, i2) (w1, w2) (o1, o2) (c1, c2) (ei1, ei2) (eo1, eo2) (apply_grad t)
 
   --- Performs predictions on data set given a network,
   --- input data and activation func
@@ -79,22 +79,22 @@ module neural_network (R:real): network with t = R.t = {
                             in (err1, (w1', w2')),
      weights = (ws1, ws2)}
 
-  let connect_parallel 'w 'i 'o 'c 'e0 'e1
+  let connect_parallel 'w1 'w2 'i1 'i2 'o1 'o2 'c1 'c2 'ei1 'eo1 'ei2 'eo2
                      ({forward=f1, backward=b1,
-                        weights=ws1}: NN i w o c e0 e1 (apply_grad t))
+                        weights=ws1}: NN i1 w1 o1 c1 ei1 eo1 (apply_grad t))
                      ({forward=f2, backward=b2,
-                        weights=ws2}: NN i w o c e0 e1 (apply_grad t))
-                      : NN ([]i) ([]w) ([]o) ([]c) ([]e0) ([]e1) (apply_grad t) =
+                        weights=ws2}: NN i2 w2 o2 c2 ei2 eo2 (apply_grad t))
+                      : NN (i1, i2) (w1, w2) (o1, o2) (c1, c2) (ei1, ei2) (eo1, eo2) (apply_grad t) =
 
-    {forward = \(is_training) weights inputs ->
-                 let (c1, res1) = f1 is_training weights[0] inputs[0]
-                 let (c2, res2) = f2 is_training weights[1] inputs[1]
-                 in ([c1, c2], [res1, res2]),
-     backward = \(_) u weights caches errors ->
-		 let (err0, w0') = b1 false u weights[0] caches[0] errors[0]
-		 let (err1, w1') = b2 false u weights[1] caches[1] errors[1]
-                 in ([err0, err1], [w0', w1']),
-     weights = [ws1, ws2]}
+    {forward = \(is_training) (w1, w2) (i1, i2) ->
+                 let (c1, res1) = f1 is_training w1 i1
+                 let (c2, res2) = f2 is_training w2 i2
+                 in ((c1, c2), (res1, res2)),
+     backward = \(_) u (w1, w2) (c1, c2) (e1, e2) ->
+		 let (err0, w0') = b1 false u w1 c1 e1
+		 let (err1, w1') = b2 false u w2 c2 e2
+                 in ((err0, err1), (w0', w1')),
+     weights = (ws1, ws2)}
 
   let predict  'i 'w 'g 'e1 'e2 'u 'o
                ({forward=f, backward=_, weights=w}:NN ([]i) w ([]o) g e1 e2 u)

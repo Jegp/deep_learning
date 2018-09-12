@@ -36,22 +36,22 @@ module merge (R:real) : layer_type with t = R.t
   module w_init = weight_initializer R
 
   -- Forward propagation
-  let forward  (act:[]t -> []t)
-               (training:bool)
-               (w: weights)
+  let forward  (_:[]t -> []t)
+               (_:bool)
+               (_: weights)
                ((i1, i2):input) : (cache, output) =
     ((), (i1 ++ i2))
 
   -- Backward propagation
-  let backward (act:[]t -> []t) (l1_sz:i32)
-               (first_layer:bool)
-               (apply_grads:apply_grad t)
-               (w:weights)
-               (c:cache)
+  let backward (_:[]t -> []t) (l1_sz:i32)
+               (_:bool)
+               (_:apply_grad t)
+               (_:weights)
+               (_:cache)
                (error_concat:error_in) : b_output =
     ((split l1_sz error_concat), ())
 
-  let init ((l, m):input_params) (act:activations) (seed:i32) : merge_tp =
+  let init ((l, _):input_params) (act:activations) (_:i32) : merge_tp =
     {forward  = forward act.f,
      backward = backward act.fd l,
      weights  = ()}

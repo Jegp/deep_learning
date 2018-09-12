@@ -7,8 +7,8 @@ let l1 = dl.layers.dense (784, 256) dl.nn.identity seed
 let l2 = dl.layers.dense (256, 256) dl.nn.identity seed
 let l3 = dl.layers.dense (256, 10) dl.nn.identity seed
 
-let p1 = dl.layers.replicate (256, 2) dl.nn.identity seed
-let m1 = dl.layers.merge ([256, 256], 512) dl.nn.identity seed
+let p1 = dl.layers.replicate 256 dl.nn.identity seed
+let m1 = dl.layers.merge (256, 256) dl.nn.identity seed
 let m2 = dl.layers.dense (512, 10) dl.nn.identity seed
 
 --let nn0 = dl.nn.connect_layers l1 l2

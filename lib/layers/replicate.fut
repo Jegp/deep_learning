@@ -6,25 +6,25 @@ import "/futlib/linalg"
 
 -- | Split input into several layers
 module replicate (R:real) : layer_type with t = R.t
-                                   with input_params = (i32, i32)
+                                   with input_params = (i32)
                                    with activations  = activation_func ([]R.t)
                                    with input        = arr2d R.t
-                                   with weights      = std_weights R.t
-                                   with output       = arr3d R.t
-                                   with cache        = (arr2d R.t, arr2d R.t)
-                                   with error_in     = arr3d R.t
+                                   with weights      = (std_weights R.t, std_weights R.t)
+                                   with output       = tup2d R.t
+                                   with cache        = (tup2d R.t, tup2d R.t)
+                                   with error_in     = tup2d R.t
                                    with error_out    = arr2d R.t = {
 
   type t            = R.t
   type input        = arr2d t
-  type weights      = (std_weights R.t)
-  type output       = arr3d t
-  type cache	    = (arr2d t, arr2d t)
-  type error_in     = arr3d t
+  type weights      = (std_weights t, std_weights t)
+  type output       = tup2d t
+  type cache	    = (tup2d t, tup2d t)
+  type error_in     = tup2d t
   type error_out    = arr2d t
-  type b_output     = (error_out, std_weights R.t)
+  type b_output     = (error_out, weights)
 
-  type input_params = (i32, i32)
+  type input_params = (i32)
   type activations  = activation_func ([]t)
 
   type replicate_nn = NN input weights output
@@ -39,58 +39,58 @@ module replicate (R:real) : layer_type with t = R.t
   let empty_error : error_out = [[]]
 
   -- Forward propagation
-  let forward (act:[]t -> []t) (l: i32)
+  let forward (act:[]t -> []t)
                (training:bool)
-               ((w, b): weights)
-              (input:input) : (cache, output) = 
-    let res      = lalg.matmul w (transpose input)
-    let res_bias = transpose (map2 (\xr b' -> map (\x -> (R.(x + b'))) xr) res b)
-    let res_act  = map (\x -> act x) (res_bias)
-    let cache    = if training then (input, res_bias) else empty_cache
-    in (cache, replicate l res_act)
+               ((t1, t2): weights)
+              (input:input) : (cache, output) =
+    let f ((w, b): std_weights t): (tup2d t, arr2d t) =
+      let res      = lalg.matmul w (transpose input)
+      let res_bias = transpose (map2 (\xr b' -> map (\x -> (R.(x + b'))) xr) res b)
+      let res_act  = map (\x -> act x) (res_bias)
+      let cache    = if training then (input, res_bias) else empty_cache
+      in (cache, res_act)
+    let (c1, r1) = f t1
+    let (c2, r2) = f t2
+    in ((c1, c2), (r1, r2))
 
   -- Backward propagation
-  let backward (act: []t -> []t) (l: i32)
+  let backward (act: []t -> []t)
                (first_layer: bool)
                (apply_grads: apply_grad t)
-               ((w, b): weights)
-               ((input, inp_w_bias): cache)
-               (errors: error_in) : b_output =
+               ((w1, w2): weights)
+               ((c1, c2): cache)
+               ((e1, e2): error_in) : b_output =
+    let b ((w, b): std_weights t) ((input, inp_w_bias): tup2d t) 
+          (error: arr2d t) : (arr2d t, std_weights t) =
+      let deriv    = (map (\x -> act x) inp_w_bias)
+      let delta    = transpose (util.hadamard_prod_2d error deriv)
+      let w_grad   = lalg.matmul delta input
+      let b_grad   = map (R.sum) delta
+      let (w', b') : std_weights t = apply_grads (w,b) (w_grad, b_grad)
+
+      --- Calc error to backprop to previous layer
+      let error' : arr2d t =
+	if first_layer then
+	 empty_error
+	else
+	 transpose (lalg.matmul (transpose w) delta)
+      in (error', (w', b'))
+    
+    let (error1, w1) = b w1 c1 e1
+    let (error2, w2) = b w2 c2 e2
+
     let zero = R.from_fraction 0 1
-    let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
-    let average_sum_v [l][m] (matrix: [l][m]t): [m]t =
-      util.scale_v (reduce util.add_v (replicate m (R.from_fraction 0 1)) matrix) fact
+    let fact = (R.from_fraction 2 1) 
     let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : arr2d t=
       util.scale_matrix (reduce util.add_matrix (replicate m (replicate n zero)) tensor) fact
-    -- Reduces weights from n to 1 layers
-    let reduce_weights [l][m][n] (weights: [l]([m][n]t, [m]t)) : std_weights t = 
-      let (ws, bs) = unzip weights
-      let w        = average_sum_matrix ws
-      let b        = average_sum_v bs
-      in (w, b)
 
-    let (errors, weights) = unzip (map (\error ->
-	let deriv    = (map (\x -> act x) inp_w_bias)
-	let delta    = transpose (util.hadamard_prod_2d error deriv)
-	let w_grad   = lalg.matmul delta input
-	let b_grad   = map (R.sum) delta
-	let (w', b') = apply_grads (w,b) (w_grad, b_grad)
+    in (average_sum_matrix [error1, error2], (w1, w2))
 
-	--- Calc error to backprop to previous layer
-	let error' =
-	  if first_layer
-	  then
-	   empty_error
-	  else
-	   transpose (lalg.matmul (transpose w) delta)
-	in (error', (w', b'))) errors)
-    in (average_sum_matrix errors, reduce_weights weights)
-
-  let init ((m,ns):input_params) (act:activations) (seed:i32) : replicate_nn =
+  let init (m:input_params) (act:activations) (seed:i32) : replicate_nn =
     let w = w_init.gen_random_array_2d_xavier_uni (m,m) seed
     let b = map (\_ -> R.(i32 0)) (0..<m)
-    in {forward  = forward act.f ns,
-	backward = backward act.fd ns,
-	weights  = (w, b)}
+    in {forward  = forward act.f,
+	backward = backward act.fd,
+	weights  = ((w, b), (w, b))}
 
 }

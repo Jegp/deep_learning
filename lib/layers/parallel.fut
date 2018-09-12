@@ -7,9 +7,8 @@ import "/futlib/linalg"
 
 -- | Parallel fully connected layer
 module parallel (R:real) : layer_type with t = R.t
-                                   with input_params = ([]i32, []i32)
+                                   with input_params = (NN i1 w1 o1 c1 e_in1 e_out1 u1, NN i2 w2 o2 c2 e_in2)
                                    with activations  = activation_func ([]R.t)
-                                   with input        = []arr2d R.t
                                    with weights      = []std_weights R.t
                                    with output       = []arr2d R.t
                                    with cache        = [](arr2d R.t, arr2d R.t)
@@ -25,21 +24,23 @@ module parallel (R:real) : layer_type with t = R.t
   type error_out    = []arr2d t
   type b_output     = [](arr2d t, arr2d t)
 
-  type input_params = ([]i32, []i32)
+  type layer = NN (arr2d t) (std_weights t) (arr2d t) (arr2d t, arr2d t) (arr2d t) (arr2d t) (apply_grad t)
+
+  type input_params = (layer, layer)  
   type activations  = activation_func ([]t)
 
-  type dense_tp = NN input weights output
+  type parallel_ = NN input weights output
                      cache error_in error_out (apply_grad t)
 
   module lalg   = linalg R
   module util   = utility R
   module w_init = weight_initializer R
 
-  let empty_cache:cache= ([[]],[[]])
+  let empty_cache:cache= [([[]],[[]]), ([[]],[[]])]
   let empty_error:error_out = [[]]
 
   -- Forward propagation
-  let forward  (act:[]t -> []t)
+  let forward  (act:[]t -> []t) (l1: layer) (l2: layer)
                (training:bool)
                ((w,b):weights)
                (input:input) : (cache, output) =

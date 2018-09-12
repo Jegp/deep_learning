@@ -13,6 +13,8 @@ type arr2d 't = [][]t
 type arr3d 't = [][][]t
 type arr4d 't = [][][][]t
 
+type tup2d 't = (arr2d t, arr2d t)
+
 type dims2d  = (i32, i32)
 type dims3d  = (i32, i32, i32)
 

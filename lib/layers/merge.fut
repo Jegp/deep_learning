@@ -59,6 +59,12 @@ module merge (R:real) : layer_type with t = R.t
                (weights:weights)
                (layer_caches:cache)
                (error_list:error_in) : b_output =
+    let zero = R.from_fraction 0 1
+    let fact = (R.from_fraction 1 1) R./ (R.from_fraction l 1)
+    let average_sum_v [l][m] (matrix: [l][m]t): [m]t =
+      util.scale_v (reduce util.add_v (replicate m (R.from_fraction 0 1)) matrix) fact
+    let average_sum_matrix [l][m][n] (tensor: [l][m][n]t) : [m][n]t=
+      util.scale_matrix (reduce util.add_matrix (replicate m (replicate n zero)) tensor) fact
     let split_errors : []error_in = unflatten l l_sz error_list
 
     let (errors, output_weights) : (error_out, []std_weights t) = 

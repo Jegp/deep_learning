@@ -16,8 +16,8 @@ module type layers = {
     NN (arr2d t) (arr2d t,arr1d t) (arr2d t)
        ((arr2d t, arr2d t)) (arr2d t) (arr2d t) (apply_grad t)
   type replicate_tp =
-    NN (arr2d t) (arr2d t,arr1d t) (arr3d t)
-       ((arr2d t, arr2d t)) (arr3d t) (arr2d t) (apply_grad t)
+    NN (arr2d t) (std_weights t, std_weights t) (tup2d t)
+       (tup2d t, tup2d t) (tup2d t) (arr2d t) (apply_grad t)
   type conv2d_tp  =
     NN (arr4d t) (arr2d t,arr1d t) (arr4d t)
        (dims3d, arr3d t, arr4d t) (arr4d t) (arr4d t) (apply_grad t)
@@ -36,7 +36,7 @@ module type layers = {
   val max_pooling2d: (i32, i32) -> max_pooling_tp
   val merge: (i32, i32) -> (activation_func ([]t)) -> i32 -> merge_tp
   val flatten: flatten_tp
-  val replicate: (i32, i32) -> (activation_func ([]t)) -> i32 -> replicate_tp
+  val replicate: (i32) -> (activation_func ([]t)) -> i32 -> replicate_tp
 }
 
 module layers_coll (R:real): layers with t = R.t = {
@@ -48,8 +48,8 @@ module layers_coll (R:real): layers with t = R.t = {
       NN (arr2d t) (arr2d t,arr1d t) (arr2d t)
          ((arr2d t, arr2d t)) (arr2d t) (arr2d t) (apply_grad t)
   type replicate_tp =
-    NN (arr2d t) (arr2d t,arr1d t) (arr3d t)
-       ((arr2d t, arr2d t)) (arr3d t) (arr2d t) (apply_grad t)
+    NN (arr2d t) (std_weights t, std_weights t) (tup2d t)
+       (tup2d t, tup2d t) (tup2d t) (arr2d t) (apply_grad t)
   type merge_tp =
     NN ([]arr2d t) ([](arr2d t,arr1d t)) (arr2d t)
        ([](arr2d t, arr2d t)) (arr2d t) ([]arr2d t) (apply_grad t)
@@ -73,10 +73,10 @@ module layers_coll (R:real): layers with t = R.t = {
             (seed:i32)  =
     dense_layer.init (m,n) act_id seed
 
-  let replicate ((m,ns):replicate_layer.input_params)
+  let replicate (n:replicate_layer.input_params)
 		(act_id:replicate_layer.activations)
 		(seed: i32) =
-    replicate_layer.init(m, ns) act_id seed
+    replicate_layer.init(n) act_id seed
 
   let conv2d (params:conv2d_layer.input_params)
              (act:conv2d_layer.activations)

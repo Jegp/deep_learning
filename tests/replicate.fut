@@ -4,7 +4,7 @@ import "../lib/util"
 module dl = deep_learning f64
 module util = utility f64
 
-let replicate = dl.layers.replicate (4,2) dl.nn.identity 1
+let replicate = dl.layers.replicate 4 dl.nn.identity 1
 
 let apply_grad_gd (alpha:f64)
                   (batch_size:i32)
@@ -36,15 +36,17 @@ let updater = (apply_grad_gd 0.1 1)
 --
 --         [1.0, 2.0, 3.0]}
 --
--- output {[[[ 31.0,  72.0, 113.0],
+-- output {[[ 31.0,  72.0, 113.0],
 --           [ 41.0,  98.0, 155.0],
---           [ 51.0, 124.0, 197.0]],
+--           [ 51.0, 124.0, 197.0]]
+--
 --          [[ 31.0,  72.0, 113.0],
 --           [ 41.0,  98.0, 155.0],
---           [ 51.0, 124.0, 197.0]]]}
+--           [ 51.0, 124.0, 197.0]]}
 
 entry replicate_fwd input w b =
-  let (_, output) = replicate.forward false (w,b) input
+  let ws = ((w, b), (w, b))
+  let (_, output) = replicate.forward false ws input
   in output
 
 
@@ -66,8 +68,9 @@ entry replicate_fwd input w b =
 
 
 entry replicate_backward_w input w b =
-  let (cache, output) = replicate.forward true (w,b) input
-  let (_, (w',_)) = replicate.backward false updater (w,b) cache output
+  let ws = ((w, b), (w, b))
+  let (cache, output) = replicate.forward true ws input
+  let (_, ((w',_), (_, _))) = replicate.backward false updater ws cache output
   in w'
 
 -- ==
@@ -85,6 +88,7 @@ entry replicate_backward_w input w b =
 -- output {[-11.30, -27.40, -43.50]}
 
 entry replicate_backward_b input w b =
-  let (cache, output) = replicate.forward true (w,b) input
-  let (_, (_,b')) = replicate.backward false updater (w,b) cache output
+  let ws = ((w, b), (w, b))
+  let (cache, output) = replicate.forward true ws input
+  let (_, ((_,b'), (_, _))) = replicate.backward false updater ws cache output
   in b'

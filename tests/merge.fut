@@ -51,13 +51,34 @@ entry merge_fwd i1 i2 =
 --
 -- output {[[1.0, 2.0, 3.0, 4.0],
 --          [2.0, 3.0, 4.0, 5.0],
---          [3.0, 4.0, 5.0, 6.0],
---          [1.0, 2.0, 3.0, 4.0]]}
+--          [3.0, 4.0, 5.0, 6.0]]
+--
+--         [[1.0, 2.0, 3.0, 4.0]]}
 
 entry merge_bwd_err i1 i2 =
   let (cache, output) = merge.forward true () (i1, i2)
-  let ((e1, e2), _) = merge.backward false updater () () output
-  in e1 ++ e2
+  let (e, _) = merge.backward false updater () () output
+  in e
+
+-- ==
+-- entry: merge_bwd_err2
+-- input {[[1.0, 2.0, 3.0, 4.0],
+--         [2.0, 3.0, 4.0, 5.0]]
+--
+--        [[1.0, 2.0, 3.0, 4.0],
+--         [2.0, 3.0, 4.0, 5.0]]}
+--
+-- output {[[1.0, 2.0, 3.0, 4.0],
+--          [2.0, 3.0, 4.0, 5.0]]
+--
+--         [[1.0, 2.0, 3.0, 4.0],
+--          [2.0, 3.0, 4.0, 5.0]]}
+
+entry merge_bwd_err2 i1 i2 = 
+  let merge = dl.layers.merge (2, 2) dl.nn.identity 1
+  let (cache, output) = merge.forward true () (i1, i2)
+  let (e, _) = merge.backward false updater () () output
+  in e
 
 -- ==
 -- entry: merge_bwd_dW

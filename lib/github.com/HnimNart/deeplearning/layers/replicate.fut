@@ -2,7 +2,7 @@ import "layer_type"
 import "../nn_types"
 import "../util"
 import "../weight_init"
-import "/futlib/linalg"
+import "../../../diku-dk/linalg/linalg"
 
 -- | Split input into several layers
 module replicate (R:real) : layer_type with t = R.t
@@ -31,7 +31,7 @@ module replicate (R:real) : layer_type with t = R.t
                       cache error_in error_out 
 		      ((std_weights t) -> (std_weights t) -> (std_weights t))
 
-  module lalg   = linalg R
+  module lalg   = mk_linalg R
   module util   = utility R
   module w_init = weight_initializer R
 
@@ -71,7 +71,7 @@ module replicate (R:real) : layer_type with t = R.t
       --- Calc error to backprop to previous layer
       let error' : arr2d t =
 	if first_layer then
-	 empty_error
+	 copy empty_error
 	else
 	 transpose (lalg.matmul (transpose w) delta)
       in (error', (w', b'))

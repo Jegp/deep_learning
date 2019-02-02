@@ -2,7 +2,7 @@ import "layer_type"
 import "../nn_types"
 import "../util"
 import "../weight_init"
-import "/futlib/linalg"
+import "../../../diku-dk/linalg/linalg"
 
 
 -- | Merges an array of layers
@@ -31,7 +31,7 @@ module merge (R:real) : layer_type with t = R.t
   type merge_tp = NN input weights output
                      cache error_in error_out (apply_grad t)
 
-  module lalg   = linalg R
+  module lalg   = mk_linalg R
   module util   = utility R
   module w_init = weight_initializer R
 

@@ -6,3 +6,4 @@
 *.swo
 *.actual
 *.expected
+lib/github.com/diku-dk/
